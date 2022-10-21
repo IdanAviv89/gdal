@@ -877,6 +877,10 @@ GDALDataset* GDALCOGCreator::Create(const char * pszFilename,
 
     CPLString osOverviews = CSLFetchNameValueDef(
         papszOptions, "OVERVIEWS", "AUTO");
+
+    CPLString numberOfOverviews = CSLFetchNameValueDef(papszOptions, "NUMBER_OF_OVERVIEWS","-1");
+
+
     const bool bRecreateOvr = EQUAL(osOverviews, "FORCE_USE_EXISTING") ||
                               EQUAL(osOverviews, "NONE");
     const bool bGenerateMskOvr =
@@ -923,9 +927,12 @@ GDALDataset* GDALCOGCreator::Create(const char * pszFilename,
         }
         else
         {
-            while( nTmpXSize > nOvrThresholdSize ||
-                   nTmpYSize > nOvrThresholdSize )
+            int overviewCounter = 0;
+            while( (nTmpXSize > nOvrThresholdSize ||
+                   nTmpYSize > nOvrThresholdSize) && (atoi(numberOfOverviews) > overviewCounter ||
+                                                      atoi(numberOfOverviews) == -1))
             {
+                overviewCounter += 1;
                 nTmpXSize /= 2;
                 nTmpYSize /= 2;
                 asOverviewDims.push_back(std::pair<int,int>(nTmpXSize, nTmpYSize));
@@ -1340,6 +1347,10 @@ void GDALCOGDriver::InitializeCreationOptionList()
 "     <Value>FORCE_USE_EXISTING</Value>"
 "     <Value>NONE</Value>"
 "   </Option>"
+"   <Option name='NUMBER_OF_OVERVIEWS' type='string' "
+    "description='Number of overviews to add to raster (-1 disable). "
+    "Works only when using the OVERVIEWS=IGNORE_EXISTING. "
+    "And will not produce overviews that are smaller than BLOCKSIZE.' default='-1'/>"
 "  <Option name='TILING_SCHEME' type='string' description='"
         "Which tiling scheme to use pre-defined value or custom inline/outline "
         "JSON definition' default='CUSTOM'>"
